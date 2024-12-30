@@ -8,14 +8,21 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.blinkitcloneapp.R
+import com.example.blinkitcloneapp.Utils
 import com.example.blinkitcloneapp.databinding.FragmentOTPBinding
 import com.example.blinkitcloneapp.databinding.FragmentSignInBinding
+import com.example.blinkitcloneapp.viewmodels.AuthViewModel
+import kotlinx.coroutines.launch
 
 
 class OTPFragment : Fragment() {
 
+
+    private val viewModel : AuthViewModel by viewModels()
 
     private lateinit var binding: FragmentOTPBinding
     private lateinit var userNumber: String
@@ -28,6 +35,8 @@ class OTPFragment : Fragment() {
 
         getUserNumber()
         customizingEnteringOTP()
+        sendOTP()
+        onLoginButtonClicked()
         onBackButtonClicked()
         return binding.root
     }
@@ -69,6 +78,55 @@ class OTPFragment : Fragment() {
             })
         }
     }
+    private fun sendOTP(){
+        Utils.showDialog(requireContext(),"Sending OTP...")
+
+        viewModel.apply {
+            sendOTP(userNumber,requireActivity())
+            lifecycleScope.launch {
+                otpSent.collect{
+                    if(it){
+                        Utils.hideDialog()
+                        Utils.showToast(requireContext(),"Otp sent...")
+                    }
+                }
+            }
+        }
+
+
+    }
+    private fun onLoginButtonClicked(){
+        binding.btnlogin.setOnClickListener{
+            Utils.showDialog(requireContext(),"Signing you...")
+            val editTexts = arrayOf(binding.etOtp1,binding.etOtp2,binding.etOtp3,binding.etOtp4,binding.etOtp5,binding.etOtp6)
+
+            val otp = editTexts.joinToString("") {it.text.toString() }
+            if(otp.length<editTexts.size){
+                Utils.showToast(requireContext(),"Please enter right otp")
+            }
+            else{
+
+                editTexts.forEach {
+                    it.text?.clear();it.clearFocus()
+                }
+                verifyOtp(otp)
+
+            }
+        }
+    }
+
+    private fun verifyOtp(otp:String) {
+      viewModel.signInWithPhoneAuthCredential(otp,userNumber)
+
+        lifecycleScope.launch {
+            viewModel.isSignedInSuccessfully.collect{
+                if(it){
+                    Utils.showToast(requireContext(),"Logged in...")
+                }
+            }
+        }
+    }
+
     private fun onBackButtonClicked(){
         binding.tbOtpFragment.setNavigationOnClickListener{
             findNavController().navigate(R.id.action_OTPFragment_to_signInFragment)
