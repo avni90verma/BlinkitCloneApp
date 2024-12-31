@@ -1,20 +1,21 @@
 package com.example.blinkitcloneapp.auth
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.blinkitcloneapp.R
 import com.example.blinkitcloneapp.Utils
+import com.example.blinkitcloneapp.activity.UsersMainActivity
 import com.example.blinkitcloneapp.databinding.FragmentOTPBinding
-import com.example.blinkitcloneapp.databinding.FragmentSignInBinding
+import com.example.blinkitcloneapp.models.Users
 import com.example.blinkitcloneapp.viewmodels.AuthViewModel
 import kotlinx.coroutines.launch
 
@@ -116,12 +117,17 @@ class OTPFragment : Fragment() {
     }
 
     private fun verifyOtp(otp:String) {
-      viewModel.signInWithPhoneAuthCredential(otp,userNumber)
+        val user = Users(uid = Utils.getCurrentUserId(),userPhoneNumber = userNumber, userAddress = null)
+      viewModel.signInWithPhoneAuthCredential(otp,userNumber,user)
+
 
         lifecycleScope.launch {
             viewModel.isSignedInSuccessfully.collect{
                 if(it){
+                    Utils.hideDialog()
                     Utils.showToast(requireContext(),"Logged in...")
+                    startActivity(Intent(requireContext(),UsersMainActivity::class.java))
+                    requireActivity().finish()
                 }
             }
         }
